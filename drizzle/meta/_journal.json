@@ -8,6 +8,20 @@
       "when": 1715684707851,
       "tag": "0000_nosy_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1715685243831,
+      "tag": "0001_right_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1715685270450,
+      "tag": "0002_vengeful_cerise",
+      "breakpoints": true
     }
   ]
 }
