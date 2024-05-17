@@ -143,6 +143,38 @@ const app = new Hono()
     }
   )
   .post(
+    "/bulk-create",
+    clerkMiddleware(),
+    zValidator(
+      "json",
+      z.array(
+        insertTransactionSchema.omit({
+          id: true,
+        })
+      )
+    ),
+    async (c) => {
+      const auth = getAuth(c);
+      const values = c.req.valid("json");
+
+      if (!auth?.userId) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const data = await db
+        .insert(transactions)
+        .values(
+          values.map((value) => ({
+            id: createId(),
+            ...value,
+          }))
+        )
+        .returning();
+
+      return c.json({ data });
+    }
+  )
+  .post(
     "/bulk-delete",
     clerkMiddleware(),
     zValidator(
@@ -221,12 +253,7 @@ const app = new Hono()
           .select({ id: transactions.id })
           .from(transactions)
           .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .where(
-            and(
-              eq(transactions.id, id),
-              eq(accounts.userId, auth.userId),
-            )
-          )
+          .where(and(eq(transactions.id, id), eq(accounts.userId, auth.userId)))
       );
 
       const [data] = await db
@@ -234,10 +261,12 @@ const app = new Hono()
         .update(transactions)
         .set(values)
         .where(
-          inArray(transactions.id, sql`(select id from ${transactionsToUpdate})`)
+          inArray(
+            transactions.id,
+            sql`(select id from ${transactionsToUpdate})`
+          )
         )
         .returning();
-        
 
       if (!data) {
         return c.json({ error: "Not found" }, 404);
@@ -272,19 +301,17 @@ const app = new Hono()
           .select({ id: transactions.id })
           .from(transactions)
           .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .where(
-            and(
-              eq(transactions.id, id),
-              eq(accounts.userId, auth.userId),
-            )
-          )
+          .where(and(eq(transactions.id, id), eq(accounts.userId, auth.userId)))
       );
 
       const [data] = await db
         .with(transactionsToDelete)
         .delete(transactions)
         .where(
-          inArray(transactions.id, sql`(select id from ${transactionsToDelete})`)
+          inArray(
+            transactions.id,
+            sql`(select id from ${transactionsToDelete})`
+          )
         )
         .returning({
           id: transactions.id,
